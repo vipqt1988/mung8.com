@@ -16,7 +16,6 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      justify-content: center;
       align-items: center;
     }
 
@@ -28,6 +27,7 @@
       text-align: center;
       border: 2px solid #00bcd4;
       max-width: 90%;
+      margin-top: 80px;
     }
 
     .welcome-box h1 {
@@ -36,52 +36,72 @@
       margin-bottom: 20px;
     }
 
-    .contact-button {
-      background-color: #00bcd4;
-      color: white;
-      padding: 12px 24px;
-      font-size: 16px;
-      border: none;
-      border-radius: 8px;
-      text-decoration: none;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-      display: inline-block;
+    .button-group {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 20px;
     }
 
-    .contact-button:hover {
+    .btn {
+      padding: 14px 28px;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      text-decoration: none;
+      color: #fff;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .btn-contact {
+      background-color: #00bcd4;
+      margin-top: 30px;
+    }
+
+    .btn-contact:hover {
       background-color: #0097a7;
     }
 
-    .json-button {
-      margin-top: 20px;
+    .btn-json {
       background-color: #673ab7;
-      color: #fff;
-      padding: 14px 28px;
-      font-size: 17px;
-      border-radius: 10px;
-      text-decoration: none;
-      transition: background-color 0.3s ease;
     }
 
-    .json-button:hover {
+    .btn-json:hover {
       background-color: #512da8;
+    }
+
+    .btn-average {
+      background-color: #ff7043;
+    }
+
+    .btn-average:hover {
+      background-color: #e64a19;
+    }
+
+    .contact-container {
+      margin-top: 30px;
     }
   </style>
 </head>
 <body>
   <div class="welcome-box">
     <h1>🌟 Chào mừng bạn đến với trang web này 🌟</h1>
-    <a class="contact-button" href="https://www.facebook.com/dinhmung.le" target="_blank">
+    <div class="button-group">
+      <a class="btn btn-json" href="https://mung8.com/v2ray.html" target="">
+        Tạo Json Vray2
+      </a>
+      <a class="btn btn-average" href="https://mung8.com/dca.html" target="">
+        Trung Bình Giá
+      </a>
+    </div>
+  </div>
+
+  <div class="contact-container">
+    <a class="btn btn-contact" href="https://www.facebook.com/dinhmung.le" target="_blank">
       Liên hệ ngay với chủ tịch của tôi
     </a>
   </div>
-
-  <a class="json-button" href="https://mung8.com/v2ray.html" target="">
-    Tạo Json Vray2
-  </a>
- <a class="json-button" href="https://mung8.com/dca.html" target="">
-    Trung bình giá
-  </a>
 </body>
 </html>
