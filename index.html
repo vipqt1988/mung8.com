@@ -1,15 +1,84 @@
-<html>
+<!DOCTYPE html>
+<html lang="vi">
 <head>
-<body>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-V5269HXKGF"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trang Chủ</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-image: url('https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=1350&q=80');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
 
-  gtag('config', 'G-V5269HXKGF');
-</script>
-</body>
+    .welcome-box {
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 40px 60px;
+      border-radius: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      border: 2px solid #00bcd4;
+      max-width: 90%;
+    }
+
+    .welcome-box h1 {
+      font-size: 32px;
+      color: #00796b;
+      margin-bottom: 20px;
+    }
+
+    .contact-button {
+      background-color: #00bcd4;
+      color: white;
+      padding: 12px 24px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      display: inline-block;
+    }
+
+    .contact-button:hover {
+      background-color: #0097a7;
+    }
+
+    .json-button {
+      margin-top: 20px;
+      background-color: #673ab7;
+      color: #fff;
+      padding: 14px 28px;
+      font-size: 17px;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: background-color 0.3s ease;
+    }
+
+    .json-button:hover {
+      background-color: #512da8;
+    }
+  </style>
 </head>
+<body>
+  <div class="welcome-box">
+    <h1>🌟 Chào mừng bạn đến với trang web này 🌟</h1>
+    <a class="contact-button" href="https://www.facebook.com/dinhmung.le" target="_blank">
+      Liên hệ ngay với chủ tịch của tôi
+    </a>
+  </div>
+
+  <a class="json-button" href="https://mung8.com/v2ray.html" target="">
+    Tạo Json Vray2
+  </a>
+</body>
 </html>
