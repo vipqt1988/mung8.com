@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>SOCKS5 to V2Ray JSON</title>
+  <style>
+    body {
+      margin: 0;
+      background: linear-gradient(to bottom right, #0f2027, #203a43, #2c5364);
+      color: #ffffff;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      background: #1e2a38;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+    }
+    h2 {
+      margin-bottom: 20px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: none;
+      margin-bottom: 15px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    #downloadLink {
+      margin-top: 20px;
+      display: block;
+      font-size: 16px;
+      color: #00ffcc;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🔧 SOCKS5 ➜ V2Ray JSON</h2>
+    <input id="proxyInput" placeholder="ip:port:user:pass" />
+    <button onclick="generate()">Tạo file JSON</button>
+    <a id="downloadLink" style="display:none">⬇️ Tải file socks5_proxy.json</a>
+  </div>
+
+  <script>
+    function generate() {
+      const input = document.getElementById('proxyInput').value.trim();
+      const link = document.getElementById('downloadLink');
+      link.style.display = 'none';
+
+      const parts = input.split(':');
+      if (parts.length !== 4) {
+        alert('⚠️ Định dạng không đúng! Phải là ip:port:user:pass');
+        return;
+      }
+
+      const [ip, port, user, pass] = parts;
+      const json = {
+        inbounds: [
+          {
+            port: 10808,
+            listen: "127.0.0.1",
+            protocol: "socks",
+            settings: { udp: true }
+          }
+        ],
+        outbounds: [
+          {
+            protocol: "socks",
+            settings: {
+              servers: [
+                {
+                  address: ip,
+                  port: parseInt(port),
+                  users: [{ user, pass }]
+                }
+              ]
+            }
+          }
+        ]
+      };
+
+      const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
+      link.href = URL.createObjectURL(blob);
+      link.download = 'socks5_proxy.json';
+      link.textContent = '⬇️ Tải file socks5_proxy.json';
+      link.style.display = 'block';
+    }
+  </script>
+</body>
+</html>
