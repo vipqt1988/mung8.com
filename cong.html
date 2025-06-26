@@ -1,0 +1,112 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Cộng Dãy Số - Công Cụ Đơn Giản</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #e0f7fa, #e1bee7);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      background: white;
+      padding: 30px 40px;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      max-width: 600px;
+      width: 100%;
+    }
+
+    h2 {
+      text-align: center;
+      color: #6a1b9a;
+    }
+
+    label {
+      font-weight: bold;
+      margin-top: 10px;
+      display: block;
+      color: #333;
+    }
+
+    textarea, input {
+      width: 100%;
+      margin: 8px 0 16px;
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-sizing: border-box;
+      resize: vertical;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      background: #8e24aa;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #6a1b9a;
+    }
+
+    #output {
+      margin-top: 20px;
+      background: #f3e5f5;
+      padding: 15px;
+      border-radius: 8px;
+      color: #4a148c;
+      font-weight: bold;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>Cộng giá trị vào dãy số</h2>
+
+    <label for="inputNumbers">Dãy số (mỗi số một dòng):</label>
+    <textarea id="inputNumbers" rows="10" placeholder="211&#10;211&#10;218&#10;..."></textarea>
+
+    <label for="addValue">Giá trị cần cộng:</label>
+    <input type="number" id="addValue" value="0" />
+
+    <button onclick="addNumbers()">Tính toán</button>
+
+    <div id="output"></div>
+  </div>
+
+  <script>
+    function addNumbers() {
+      const rawInput = document.getElementById("inputNumbers").value;
+      const addValue = parseFloat(document.getElementById("addValue").value);
+
+      const numbers = rawInput
+        .split("\n")
+        .map(line => parseFloat(line.trim()))
+        .filter(num => !isNaN(num));
+
+      const added = numbers.map(num => num + addValue);
+
+      document.getElementById("output").innerText =
+        "Kết quả sau khi cộng:\n" + added.join("\n");
+    }
+  </script>
+
+</body>
+</html>
