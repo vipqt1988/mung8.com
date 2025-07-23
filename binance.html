@@ -1,0 +1,60 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Binance Server Time (UTC)</title>
+  <style>
+    body {
+      font-family: monospace;
+      font-size: 2em;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #000;
+      color: #f0c000;
+    }
+    .note {
+      font-size: 0.6em;
+      color: #888;
+      margin-top: 1em;
+    }
+  </style>
+</head>
+<body>
+  <div id="clock">Loading Binance time...</div>
+  <div class="note">Giờ UTC từ server Binance API (real-time, chính xác với sàn)</div>
+
+  <script>
+    let baseBinance = 0;
+    let baseLocal = 0;
+
+    async function syncBinanceTime() {
+      try {
+        const t0 = Date.now();
+        const res = await fetch("https://api.binance.com/api/v3/time");
+        const t1 = Date.now();
+        const data = await res.json();
+        const serverTime = data.serverTime;
+        const networkDelay = (t1 - t0) / 2;
+        baseBinance = serverTime + networkDelay;
+        baseLocal = Date.now();
+      } catch (e) {
+        console.error("Lỗi khi lấy giờ Binance:", e);
+      }
+    }
+
+    function updateClock() {
+      const now = Date.now();
+      const binanceNow = new Date(baseBinance + (now - baseLocal));
+      document.getElementById("clock").textContent = binanceNow.toISOString();
+    }
+
+    syncBinanceTime();
+    setInterval(updateClock, 50);
+    setInterval(syncBinanceTime, 5000);
+  </script>
+</body>
+</html>
