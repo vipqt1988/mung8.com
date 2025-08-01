@@ -1,0 +1,234 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>2FA Layout + Tick khi Copy</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f6f8;
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+    .account {
+      background: #fff;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .row {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    .col {
+      flex: 1;
+      min-width: 220px;
+    }
+    label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 5px;
+      color: #555;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      font-size: 15px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    .otp-row {
+      display: flex;
+      align-items: center;
+      margin-top: 15px;
+    }
+    .otp {
+      font-size: 32px;
+      font-weight: bold;
+      color: #2a9d8f;
+      display: flex;
+      align-items: center;
+    }
+    .tick {
+      margin-left: 10px;
+      font-size: 20px;
+      color: #22c55e;
+      display: none;
+    }
+    .copy-btn {
+      margin-left: auto;
+      padding: 6px 12px;
+      font-size: 14px;
+      border: none;
+      background: #2a9d8f;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .copy-btn:hover {
+      background: #1d7b6f;
+    }
+    .timer {
+      font-size: 14px;
+      color: #888;
+      margin-top: 5px;
+    }
+    .add-btn {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .add-btn:hover {
+      background: #1e3a8a;
+    }
+  </style>
+</head>
+<body>
+  <h2>🔐 Trình quản lý mã 2FA</h2>
+  <div id="accounts"></div>
+  <button class="add-btn" onclick="addAccount()">➕ Thêm tài khoản</button>
+
+  <script>
+    let accountCount = 0;
+    let accountsData = [];
+
+    function base32ToHex(base32) {
+      const base32chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+      let bits = "", hex = "";
+      base32 = base32.replace(/=+$/, '').toUpperCase();
+      for (let i = 0; i < base32.length; i++) {
+        const val = base32chars.indexOf(base32.charAt(i));
+        bits += val.toString(2).padStart(5, '0');
+      }
+      for (let i = 0; i + 4 <= bits.length; i += 4) {
+        hex += parseInt(bits.substr(i, 4), 2).toString(16);
+      }
+      return hex;
+    }
+
+    function leftpad(str, len, pad) {
+      return (new Array(len + 1).join(pad) + str).slice(-len);
+    }
+
+    function generateTOTP(secret) {
+      const key = base32ToHex(secret);
+      const epoch = Math.round(new Date().getTime() / 1000.0);
+      const time = leftpad(Math.floor(epoch / 30).toString(16), 16, '0');
+      const crypto = window.crypto || window.msCrypto;
+      const timeArray = new Uint8Array(time.match(/.{2}/g).map(b => parseInt(b, 16)));
+      const keyArray = new Uint8Array(key.match(/.{2}/g).map(b => parseInt(b, 16)));
+      const algo = { name: "HMAC", hash: "SHA-1" };
+      return crypto.subtle.importKey("raw", keyArray, algo, false, ["sign"])
+        .then(key => crypto.subtle.sign(algo, key, timeArray))
+        .then(sig => {
+          const h = new Uint8Array(sig);
+          const offset = h[h.length - 1] & 0xf;
+          const bin_code = ((h[offset] & 0x7f) << 24) |
+                           ((h[offset + 1] & 0xff) << 16) |
+                           ((h[offset + 2] & 0xff) << 8) |
+                           (h[offset + 3] & 0xff);
+          return leftpad((bin_code % 1000000).toString(), 6, '0');
+        });
+    }
+
+    function saveToStorage() {
+      localStorage.setItem("accounts", JSON.stringify(accountsData));
+    }
+
+    function addAccount(name = "", secret = "") {
+      const id = accountCount++;
+      accountsData.push({ id, name, secret });
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'account';
+      wrapper.innerHTML = `
+        <div class="row">
+          <div class="col">
+            <label>Secret key (base32):</label>
+            <input type="text" id="secret-${id}" value="${secret}" oninput="updateData(${id}, 'secret', this.value)">
+          </div>
+          <div class="col">
+            <label>Tên tài khoản:</label>
+            <input type="text" id="name-${id}" value="${name}" oninput="updateData(${id}, 'name', this.value)">
+          </div>
+        </div>
+        <div class="otp-row">
+          <div class="otp" id="otp-${id}"><span class="otp-code">------</span><button class="copy-btn" onclick="copyOTP(${id})" style="margin-left:12px;">📋 Copy</button><span class="tick" id="tick-${id}">✅</span></div>
+        </div>
+        <div class="timer" id="timer-${id}">Đang tải...</div>
+      `;
+      document.getElementById('accounts').appendChild(wrapper);
+    }
+
+    function updateData(id, key, value) {
+      const acc = accountsData.find(acc => acc.id === id);
+      if (acc) {
+        acc[key] = value;
+        saveToStorage();
+      }
+    }
+
+    function copyOTP(id) {
+      const otpText = document.querySelector(`#otp-${id} .otp-code`).textContent.trim();
+      const tickElem = document.getElementById(`tick-${id}`);
+      navigator.clipboard.writeText(otpText).then(() => {
+        tickElem.style.display = 'inline';
+        setTimeout(() => {
+          tickElem.style.display = 'none';
+        }, 1500);
+      });
+    }
+
+    function updateAllOTPs() {
+      for (const acc of accountsData) {
+        const secret = acc.secret.trim().replace(/\s/g, '');
+        const otp = document.getElementById(`otp-${acc.id}`);
+        const timer = document.getElementById(`timer-${acc.id}`);
+        if (!secret) {
+          otp.textContent = "------";
+          timer.textContent = "";
+          continue;
+        }
+        generateTOTP(secret).then(code => {
+          const tick = document.getElementById(`tick-${acc.id}`);
+          otp.querySelector(".otp-code").textContent = code;
+        }).catch(() => {
+          otp.textContent = "❌ Error";
+        });
+        const remaining = 30 - Math.floor(Date.now() / 1000) % 30;
+        timer.textContent = "Còn " + remaining + " giây";
+      }
+    }
+
+    function loadAccountsFromStorage() {
+      const data = localStorage.getItem("accounts");
+      if (data) {
+        try {
+          const parsed = JSON.parse(data);
+          parsed.forEach(acc => addAccount(acc.name, acc.secret));
+        } catch {
+          addAccount();
+        }
+      } else {
+        addAccount();
+      }
+    }
+
+    setInterval(updateAllOTPs, 1000);
+    loadAccountsFromStorage();
+  </script>
+</body>
+</html>
