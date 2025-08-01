@@ -3,7 +3,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>2FA Layout + Tick khi Copy</title>
+  <title>2FA Full Layout</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -17,11 +17,30 @@
       color: #333;
     }
     .account {
+      position: relative;
       background: #fff;
       padding: 20px;
       margin-bottom: 20px;
       border-radius: 10px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .delete-btn {
+      transition: transform 0.2s ease, background 0.2s ease;
+      background: #3B82F6; /* màu đỏ nhẹ hơn */
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #44efcb;
+      color: #1f2937;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+    .delete-btn:hover {
+      transform: rotate(15deg);
+      background: #2563EB;
+      background: #b91c1c;
     }
     .row {
       display: flex;
@@ -64,12 +83,12 @@
       display: none;
     }
     .copy-btn {
-      margin-left: auto;
+      margin-left: 12px;
       padding: 6px 12px;
       font-size: 14px;
       border: none;
       background: #2a9d8f;
-      color: white;
+      color: #1f2937;
       border-radius: 6px;
       cursor: pointer;
     }
@@ -86,7 +105,7 @@
       padding: 12px;
       font-size: 16px;
       background: #2563eb;
-      color: white;
+      color: #1f2937;
       border: none;
       border-radius: 8px;
       cursor: pointer;
@@ -94,7 +113,38 @@
     .add-btn:hover {
       background: #1e3a8a;
     }
-  </style>
+  
+    body.dark-mode {
+      background: #1e1e1e;
+      color: #f0f0f0;
+    }
+    body.dark-mode .account {
+      background: #2c2c2c;
+    }
+    body.dark-mode input {
+      background: #444;
+      color: #fff;
+      border: 1px solid #666;
+    }
+    body.dark-mode .copy-btn {
+      background: #10b981;
+    }
+    body.dark-mode .copy-btn:hover {
+      background: #059669;
+    }
+    body.dark-mode .add-btn {
+      background: #4f46e5;
+    }
+    body.dark-mode .delete-btn {
+      background: #3B82F6;
+    }
+    body.dark-mode .delete-btn:hover {
+      background: #2563EB;
+    }
+    body.dark-mode .add-btn:hover {
+      background: #3730a3;
+    }
+    </style>
 </head>
 <body>
   <h2>🔐 Trình quản lý mã 2FA</h2>
@@ -154,22 +204,59 @@
 
       const wrapper = document.createElement('div');
       wrapper.className = 'account';
-      wrapper.innerHTML = `
-        <div class="row">
-          <div class="col">
-            <label>Secret key (base32):</label>
-            <input type="text" id="secret-${id}" value="${secret}" oninput="updateData(${id}, 'secret', this.value)">
-          </div>
-          <div class="col">
-            <label>Tên tài khoản:</label>
-            <input type="text" id="name-${id}" value="${name}" oninput="updateData(${id}, 'name', this.value)">
-          </div>
-        </div>
-        <div class="otp-row">
-          <div class="otp" id="otp-${id}"><span class="otp-code">------</span><button class="copy-btn" onclick="copyOTP(${id})" style="margin-left:12px;">📋 Copy</button><span class="tick" id="tick-${id}">✅</span></div>
-        </div>
-        <div class="timer" id="timer-${id}">Đang tải...</div>
+      wrapper.id = `account-${id}`;
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'delete-btn';
+      delBtn.innerHTML = '✖️';
+      delBtn.onclick = () => {
+        accountsData = accountsData.filter(acc => acc.id !== id);
+        saveToStorage();
+        wrapper.remove();
+      };
+      wrapper.appendChild(delBtn);
+
+      const row = document.createElement('div');
+      row.className = 'row';
+
+      const col1 = document.createElement('div');
+      col1.className = 'col';
+      col1.innerHTML = `
+        <label>Secret key (base32):</label>
+        <input type="text" id="secret-${id}" value="${secret}" oninput="updateData(${id}, 'secret', this.value)">
       `;
+
+      const col2 = document.createElement('div');
+      col2.className = 'col';
+      col2.innerHTML = `
+        <label>Tên tài khoản:</label>
+        <input type="text" id="name-${id}" value="${name}" oninput="updateData(${id}, 'name', this.value)">
+      `;
+
+      row.appendChild(col1);
+      row.appendChild(col2);
+      wrapper.appendChild(row);
+
+      const otpRow = document.createElement('div');
+      otpRow.className = 'otp-row';
+
+      const otp = document.createElement('div');
+      otp.className = 'otp';
+      otp.id = `otp-${id}`;
+      otp.innerHTML = `
+        <span class="otp-code">------</span>
+        <button class="copy-btn" onclick="copyOTP(${id})">📋 Copy</button>
+        <span class="tick" id="tick-${id}">✅</span>
+      `;
+      otpRow.appendChild(otp);
+      wrapper.appendChild(otpRow);
+
+      const timer = document.createElement('div');
+      timer.className = 'timer';
+      timer.id = `timer-${id}`;
+      timer.textContent = 'Đang tải...';
+      wrapper.appendChild(timer);
+
       document.getElementById('accounts').appendChild(wrapper);
     }
 
@@ -186,30 +273,27 @@
       const tickElem = document.getElementById(`tick-${id}`);
       navigator.clipboard.writeText(otpText).then(() => {
         tickElem.style.display = 'inline';
-        setTimeout(() => {
-          tickElem.style.display = 'none';
-        }, 1500);
+        setTimeout(() => tickElem.style.display = 'none', 1500);
       });
     }
 
     function updateAllOTPs() {
       for (const acc of accountsData) {
         const secret = acc.secret.trim().replace(/\s/g, '');
-        const otp = document.getElementById(`otp-${acc.id}`);
-        const timer = document.getElementById(`timer-${acc.id}`);
+        const otpElem = document.getElementById(`otp-${acc.id}`);
+        const timerElem = document.getElementById(`timer-${acc.id}`);
         if (!secret) {
-          otp.textContent = "------";
-          timer.textContent = "";
+          otpElem.querySelector(".otp-code").textContent = "------";
+          timerElem.textContent = "";
           continue;
         }
         generateTOTP(secret).then(code => {
-          const tick = document.getElementById(`tick-${acc.id}`);
-          otp.querySelector(".otp-code").textContent = code;
+          otpElem.querySelector(".otp-code").textContent = code;
         }).catch(() => {
-          otp.textContent = "❌ Error";
+          otpElem.querySelector(".otp-code").textContent = "❌ Error";
         });
         const remaining = 30 - Math.floor(Date.now() / 1000) % 30;
-        timer.textContent = "Còn " + remaining + " giây";
+        timerElem.textContent = "Còn " + remaining + " giây";
       }
     }
 
