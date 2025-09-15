@@ -30,7 +30,7 @@
     .kv .v{font-size:20px;font-weight:700;margin-top:4px}
     a{color:#8ab4ff;text-decoration:none}
     a:hover{text-decoration:underline}
-    .foot{margin-top:18px;font-size:12px;color:var(--muted)}
+    .foot{margin-top:18px;font-size:12px;color:#9bb0cf}
     .spinner{display:inline-block;width:16px;height:16px;border:3px solid #29406b;border-top-color:#8ab4ff;border-radius:50%;animation:spin 1s linear infinite;vertical-align:middle;margin-right:8px}
     @keyframes spin{to{transform:rotate(360deg)}}
   </style>
@@ -39,7 +39,7 @@
   <div class="wrap">
     <div class="card">
       <h1>USDT Balance Checker (BSC)</h1>
-      <p class="small">Kiểm tra số dư <b>USDT (BEP‑20)</b> cho địa chỉ ví BNB Smart Chain. Không cần API key. Dùng <code>ethers.js</code> & nhiều RPC để dự phòng.</p>
+      <p class="small">Kiểm tra số dư <b>USDT (BEP-20)</b> cho địa chỉ ví BNB Smart Chain. Không cần API key. Dùng <code>ethers.js</code> & nhiều RPC để dự phòng.</p>
 
       <div class="row">
         <div>
@@ -72,12 +72,117 @@
         </div>
       </div>
 
-      <div class="foot">RPC dùng: bsc‑dataseed, publicnode, ninincoin, defibit (tự động thử lần lượt). Nếu lỗi, thử lại vài giây sau.</div>
+      <div class="foot">RPC dùng: bsc-dataseed, publicnode, ninincoin, defibit (tự động thử lần lượt). Nếu lỗi, thử lại vài giây sau.</div>
     </div>
   </div>
 
 <script>
-// JS code omitted for brevity (it's included in full in the document)
+(async() => {
+  // FIX: đúng cách lấy ethers từ UMD
+  const ethers = window.ethers;
+
+  const RPCS = [
+    'https://bsc-dataseed.binance.org',
+    'https://bsc-dataseed1.ninicoin.io',
+    'https://bsc-dataseed1.defibit.io',
+    'https://bsc.publicnode.com'
+  ];
+
+  const ERC20_ABI = [
+    'function balanceOf(address) view returns (uint256)',
+    'function decimals() view returns (uint8)',
+    'function symbol() view returns (string)'
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const fmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 18 });
+
+  function setStatus(msg, type='info'){
+    const el = $('status');
+    el.style.color = type==='error' ? 'var(--err)' : (type==='warn' ? 'var(--warn)' : 'var(--muted)');
+    el.textContent = msg;
+  }
+
+  function validAddr(a){ try { return ethers.isAddress(a); } catch { return false; } }
+
+  async function withProvider(task){
+    let lastErr;
+    for (const url of RPCS){
+      const provider = new ethers.JsonRpcProvider(url, { chainId:56, name:'BSC' });
+      try{
+        const t0 = performance.now();
+        await provider.getBlockNumber();
+        const t1 = performance.now();
+        setStatus(`Đã kết nối RPC ${url} (latency ~${Math.round(t1-t0)}ms)`);
+        return await task(provider);
+      }catch(e){ lastErr = e; }
+    }
+    throw lastErr || new Error('Không kết nối được RPC');
+  }
+
+  async function checkBNB(){
+    const addr = $('addr').value.trim();
+    if(!validAddr(addr)) return setStatus('Địa chỉ ví không hợp lệ.', 'error');
+    setStatus('Đang lấy số dư BNB...');
+    $('bnbBalance').innerHTML = '<span class="spinner"></span>';
+    try{
+      const res = await withProvider(async (provider) => {
+        const wei = await provider.getBalance(addr);
+        return ethers.formatEther(wei);
+      });
+      $('bnbBalance').textContent = `${fmt.format(res)} BNB`;
+      setStatus('Xong.');
+    }catch(e){
+      $('bnbBalance').textContent = '—';
+      setStatus('Lỗi lấy số dư BNB: ' + (e?.message||e), 'error');
+    }
+  }
+
+  async function checkUSDT(){
+    const addr = $('addr').value.trim();
+    const token = $('token').value.trim();
+    if(!validAddr(addr)) return setStatus('Địa chỉ ví không hợp lệ.', 'error');
+    if(!validAddr(token)) return setStatus('Địa chỉ hợp đồng token không hợp lệ.', 'error');
+
+    setStatus('Đang lấy số dư USDT...');
+    $('usdtBalance').innerHTML = '<span class="spinner"></span>';
+
+    try{
+      const res = await withProvider(async (provider) => {
+        const erc20 = new ethers.Contract(token, ERC20_ABI, provider);
+        const [bal, decimals, symbol] = await Promise.all([
+          erc20.balanceOf(addr),
+          erc20.decimals(),
+          erc20.symbol().catch(()=> 'USDT')
+        ]);
+        const human = ethers.formatUnits(bal, decimals);
+        return { human, symbol };
+      });
+      $('usdtBalance').textContent = `${fmt.format(res.human)} ${res.symbol}`;
+      setStatus('Xong.');
+    }catch(e){
+      $('usdtBalance').textContent = '—';
+      setStatus('Lỗi lấy số dư USDT: ' + (e?.message||e), 'error');
+    }
+  }
+
+  $('checkBtn').addEventListener('click', checkUSDT);
+  $('bnbBtn').addEventListener('click', checkBNB);
+  $('bscscanBtn').addEventListener('click', () => {
+    const a = $('addr').value.trim();
+    if(validAddr(a)) window.open(`https://bscscan.com/address/${a}`, '_blank');
+    else setStatus('Địa chỉ ví không hợp lệ.', 'error');
+  });
+  $('clearBtn').addEventListener('click', () => {
+    $('usdtBalance').textContent = '—';
+    $('bnbBalance').textContent = '—';
+    setStatus('Đã xóa kết quả.');
+  });
+
+  // Auto-run
+  checkUSDT();
+  checkBNB();
+})();
 </script>
 </body>
 </html>
