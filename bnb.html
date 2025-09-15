@@ -2,186 +2,304 @@
 <html lang="vi">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>USDT Balance Checker • BSC</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>USDT (BEP‑20) Multi‑Wallet Checker • BSC</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.11.1/dist/ethers.umd.min.js"></script>
   <style>
-    :root { --bg:#0b1220; --card:#111a2b; --txt:#e6f0ff; --muted:#9bb0cf; --acc:#18d26e; --warn:#ffb020; --err:#ff6b6b; }
+    :root{
+      --bg:#0b0f1a;--card:#0f1626;--ink:#e6f0ff;--muted:#9db3d8;--accent:#1ee58b;--accent-2:#3b82f6;--err:#ff6b6b;--border:#1e2a47
+    }
     *{box-sizing:border-box}
-    body{margin:0;background:linear-gradient(180deg,#0b1220,#0a0f1a);color:var(--txt);font:16px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-    .wrap{max-width:820px;margin:40px auto;padding:0 16px}
-    .card{background:var(--card);border:1px solid #1d2740;padding:18px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-    h1{font-size:24px;margin:0 0 12px}
-    p.small{color:var(--muted);margin:0 0 14px}
-    label{display:block;color:var(--muted);font-size:12px;margin:12px 0 6px}
-    input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid #233155;background:#0c1527;color:var(--txt);outline:none}
-    input:focus{border-color:#3b82f6;box-shadow:0 0 0 4px rgba(59,130,246,.15)}
-    .row{display:grid;grid-template-columns:1fr;gap:14px}
-    @media(min-width:720px){.row{grid-template-columns:1fr 1fr}}
-    .btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
-    button{cursor:pointer;border:0;border-radius:12px;padding:12px 16px;font-weight:600}
-    .primary{background:var(--acc);color:#06210e}
-    .ghost{background:#152040;color:var(--txt);border:1px solid #253357}
-    .danger{background:#2a1420;color:#ffd9d9;border:1px solid #5a1f33}
-    .status{margin-top:16px;padding:12px 14px;border-radius:12px;background:#0d1426;border:1px solid #1e2947;color:var(--muted);white-space:pre-wrap}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
-    .kv{background:#0c1527;border:1px solid #233155;border-radius:12px;padding:12px}
-    .kv .k{color:var(--muted);font-size:12px}
-    .kv .v{font-size:20px;font-weight:700;margin-top:4px}
-    a{color:#8ab4ff;text-decoration:none}
-    a:hover{text-decoration:underline}
-    .foot{margin-top:18px;font-size:12px;color:#9bb0cf}
-    .spinner{display:inline-block;width:16px;height:16px;border:3px solid #29406b;border-top-color:#8ab4ff;border-radius:50%;animation:spin 1s linear infinite;vertical-align:middle;margin-right:8px}
-    @keyframes spin{to{transform:rotate(360deg)}}
+    body{margin:0;background:radial-gradient(1200px 600px at 10% -10%,#142038,transparent),linear-gradient(180deg,#0b0f1a,#0a0f19);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+    .wrap{max-width:1100px;margin:28px auto;padding:0 16px}
+    h1{margin:0 0 8px;font-size:24px;letter-spacing:.3px}
+    .sub{color:var(--muted);margin:0 0 16px}
+    .toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 16px}
+    button{cursor:pointer;border:1px solid var(--border);background:#0e1526;padding:10px 14px;border-radius:12px;font-weight:700;color:var(--ink);transition:.2s}
+    button:hover{border-color:#35528f;box-shadow:0 0 0 4px rgba(59,130,246,.15)}
+    button.primary{background:var(--accent);border-color:#0b7a3f;color:#042515}
+    button.ghost{background:#121b30}
+    button.danger{background:#2a1620;color:#ffd6d6;border-color:#4e1d2e}
+    input{border:1px solid var(--border);border-radius:12px;padding:10px 12px;width:100%;background:#0e1526;color:var(--ink);outline:none}
+    input:focus{border-color:var(--accent-2);box-shadow:0 0 0 4px rgba(59,130,246,.15)}
+    label{display:block;color:var(--muted);font-size:12px;margin:0 0 6px}
+    .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    table{width:100%;border-collapse:separate;border-spacing:0;margin-top:14px;background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+    th,td{border-bottom:1px solid var(--border);padding:12px 14px;vertical-align:middle}
+    thead th{background:#121c31;color:var(--muted);text-transform:lowercase;font-weight:700}
+    tbody tr:last-child td{border-bottom:0}
+    colgroup col:nth-child(1){width:220px}
+    colgroup col:nth-child(2){width:auto}
+    colgroup col:nth-child(3){width:260px}
+    td.addr input, td.name input{width:100%;border:0;outline:none;background:transparent;color:var(--ink)}
+    td.addr input{font-family:ui-monospace,Consolas,monospace}
+    td.bal{font-weight:800}
+    .status{margin-top:12px;color:var(--muted);white-space:pre-wrap}
+    .err{color:#ff6b6b;font-weight:600}
+    .pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);padding:8px 12px;border-radius:999px;background:#0f182b}
+    .switch{position:relative;display:inline-flex;align-items:center;gap:10px}
+    .switch input{display:none}
+    .slider{width:48px;height:26px;border-radius:999px;background:#26324d;border:1px solid var(--border);position:relative;transition:.2s}
+    .slider:after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#b7c7e6;transition:.2s}
+    .switch input:checked + .slider{background:#1aa062}
+    .switch input:checked + .slider:after{transform:translateX(22px);background:#fff}
+    .countdown{font-variant-numeric:tabular-nums}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="card">
-      <h1>USDT Balance Checker (BSC)</h1>
-      <p class="small">Kiểm tra số dư <b>USDT (BEP-20)</b> cho địa chỉ ví BNB Smart Chain. Không cần API key. Dùng <code>ethers.js</code> & nhiều RPC để dự phòng.</p>
-
-      <div class="row">
-        <div>
-          <label>Địa chỉ ví (BSC)</label>
-          <input id="addr" placeholder="0x..." value="0x2b2F70a132485DE092484537bD4A26E90f022dCf" />
-        </div>
-        <div>
-          <label>Hợp đồng token (USDT trên BSC)</label>
-          <input id="token" placeholder="0x55d398326f99059fF775485246999027B3197955" value="0x55d398326f99059fF775485246999027B3197955" />
+    <h1>USDT (BEP‑20) Multi‑Wallet Checker — BSC</h1>
+    <p class="sub">Giao diện tối, tự lưu danh sách ví, auto refresh mỗi 5s (có bật/tắt).</p>
+    <div class="grid">
+      <div>
+        <label>Hợp đồng USDT trên BSC</label>
+        <input id="token" value="0x55d398326f99059fF775485246999027B3197955" />
+      </div>
+      <div>
+        <label>RPC (tùy chọn — để trống dùng mặc định)</label>
+        <input id="rpc" placeholder="https://..." />
+      </div>
+      <div>
+        <label>Tự động kiểm tra</label>
+        <div class="pill">
+          <label class="switch">
+            <input type="checkbox" id="autoToggle" />
+            <span class="slider"></span>
+          </label>
+          <span>Auto 5s • <span id="cd" class="countdown">—</span></span>
+          <button class="ghost" id="checkNow">Refresh ngay</button>
         </div>
       </div>
-
-      <div class="btns">
-        <button class="primary" id="checkBtn">Check USDT</button>
-        <button class="ghost" id="bnbBtn">Check số dư BNB</button>
-        <button class="ghost" id="bscscanBtn">Mở BscScan</button>
-        <button class="danger" id="clearBtn">Xóa kết quả</button>
-      </div>
-
-      <div id="status" class="status">Sẵn sàng.</div>
-
-      <div class="grid">
-        <div class="kv">
-          <div class="k">USDT balance</div>
-          <div class="v" id="usdtBalance">—</div>
-        </div>
-        <div class="kv">
-          <div class="k">BNB balance</div>
-          <div class="v" id="bnbBalance">—</div>
-        </div>
-      </div>
-
-      <div class="foot">RPC dùng: bsc-dataseed, publicnode, ninincoin, defibit (tự động thử lần lượt). Nếu lỗi, thử lại vài giây sau.</div>
     </div>
+
+    <div class="toolbar">
+      <button class="primary" id="checkAll">Check tất cả</button>
+      <button class="ghost" id="addRow">Thêm dòng</button>
+      <button class="ghost" id="pasteList">Dán danh sách ví</button>
+      <button class="ghost" id="exportCsv">Xuất CSV</button>
+      <button class="danger" id="clearBal">Xóa số dư</button>
+      <button class="danger" id="clearRows">Xóa toàn bộ dòng</button>
+    </div>
+
+    <table id="tbl">
+      <colgroup><col><col><col></colgroup>
+      <thead>
+        <tr>
+          <th>tên</th>
+          <th>ví</th>
+          <th>số dư usdt</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+
+    <div class="status" id="status">Sẵn sàng.</div>
   </div>
 
 <script>
-(async() => {
-  // FIX: đúng cách lấy ethers từ UMD
+(() => {
+  const STORAGE_KEY = 'usdt_multi_state_v2';
   const ethers = window.ethers;
+  const $ = (sel, el=document) => el.querySelector(sel);
+  const $$ = (sel, el=document) => Array.from(el.querySelectorAll(sel));
+  const fmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 18 });
 
-  const RPCS = [
+  const DEFAULT_RPCS = [
     'https://bsc-dataseed.binance.org',
     'https://bsc-dataseed1.ninicoin.io',
     'https://bsc-dataseed1.defibit.io',
     'https://bsc.publicnode.com'
   ];
-
-  const ERC20_ABI = [
+  const ABI = [
     'function balanceOf(address) view returns (uint256)',
     'function decimals() view returns (uint8)',
     'function symbol() view returns (string)'
   ];
 
-  const $ = (id) => document.getElementById(id);
-  const fmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 18 });
-
   function setStatus(msg, type='info'){
-    const el = $('status');
-    el.style.color = type==='error' ? 'var(--err)' : (type==='warn' ? 'var(--warn)' : 'var(--muted)');
+    const el = $('#status');
+    el.classList.toggle('err', type==='error');
     el.textContent = msg;
   }
+  function validAddr(a){ try { return ethers.isAddress((a||'').trim()); } catch { return false; } }
 
-  function validAddr(a){ try { return ethers.isAddress(a); } catch { return false; } }
+  function saveState(){
+    const rows = $$('#tbl tbody tr').map(tr=>({
+      name: $('td.name input', tr).value || '',
+      addr: $('td.addr input', tr).value || ''
+    }));
+    const state = {
+      token: $('#token').value.trim(),
+      rpc: $('#rpc').value.trim(),
+      auto: $('#autoToggle').checked,
+      rows
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
 
-  async function withProvider(task){
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return null;
+      return JSON.parse(raw);
+    }catch{ return null; }
+  }
+
+  function renderRows(arr){
+    const tb = $('#tbl tbody');
+    tb.innerHTML = '';
+    (arr||[]).forEach(({name,addr})=> addRow(name, addr));
+    if(tb.children.length===0){
+      addRow('Ví mẫu','0x2b2F70a132485DE092484537bD4A26E90f022dCf');
+      addRow('', '');
+    }
+  }
+
+  async function getProvider(){
+    const custom = $('#rpc').value.trim();
+    if (custom){
+      const p = new ethers.JsonRpcProvider(custom, { chainId:56, name:'BSC' });
+      await p.getBlockNumber();
+      return p;
+    }
     let lastErr;
-    for (const url of RPCS){
-      const provider = new ethers.JsonRpcProvider(url, { chainId:56, name:'BSC' });
-      try{
-        const t0 = performance.now();
-        await provider.getBlockNumber();
-        const t1 = performance.now();
-        setStatus(`Đã kết nối RPC ${url} (latency ~${Math.round(t1-t0)}ms)`);
-        return await task(provider);
-      }catch(e){ lastErr = e; }
+    for (const url of DEFAULT_RPCS){
+      const p = new ethers.JsonRpcProvider(url, { chainId:56, name:'BSC' });
+      try { await p.getBlockNumber(); setStatus(`RPC OK: ${url}`); return p; } catch(e){ lastErr = e; }
     }
     throw lastErr || new Error('Không kết nối được RPC');
   }
 
-  async function checkBNB(){
-    const addr = $('addr').value.trim();
-    if(!validAddr(addr)) return setStatus('Địa chỉ ví không hợp lệ.', 'error');
-    setStatus('Đang lấy số dư BNB...');
-    $('bnbBalance').innerHTML = '<span class="spinner"></span>';
-    try{
-      const res = await withProvider(async (provider) => {
-        const wei = await provider.getBalance(addr);
-        return ethers.formatEther(wei);
-      });
-      $('bnbBalance').textContent = `${fmt.format(res)} BNB`;
-      setStatus('Xong.');
-    }catch(e){
-      $('bnbBalance').textContent = '—';
-      setStatus('Lỗi lấy số dư BNB: ' + (e?.message||e), 'error');
-    }
+  async function fetchUSDT(provider, token, addr){
+    const c = new ethers.Contract(token, ABI, provider);
+    const [bal, dec] = await Promise.all([ c.balanceOf(addr), c.decimals() ]);
+    return ethers.formatUnits(bal, dec);
   }
 
-  async function checkUSDT(){
-    const addr = $('addr').value.trim();
-    const token = $('token').value.trim();
-    if(!validAddr(addr)) return setStatus('Địa chỉ ví không hợp lệ.', 'error');
-    if(!validAddr(token)) return setStatus('Địa chỉ hợp đồng token không hợp lệ.', 'error');
+  async function checkAll(){
+    const token = $('#token').value.trim();
+    if(!validAddr(token)) return setStatus('Hợp đồng USDT không hợp lệ', 'error');
 
-    setStatus('Đang lấy số dư USDT...');
-    $('usdtBalance').innerHTML = '<span class="spinner"></span>';
+    const rows = $$('#tbl tbody tr');
+    if(rows.length === 0) return;
 
-    try{
-      const res = await withProvider(async (provider) => {
-        const erc20 = new ethers.Contract(token, ERC20_ABI, provider);
-        const [bal, decimals, symbol] = await Promise.all([
-          erc20.balanceOf(addr),
-          erc20.decimals(),
-          erc20.symbol().catch(()=> 'USDT')
-        ]);
-        const human = ethers.formatUnits(bal, decimals);
-        return { human, symbol };
-      });
-      $('usdtBalance').textContent = `${fmt.format(res.human)} ${res.symbol}`;
-      setStatus('Xong.');
-    }catch(e){
-      $('usdtBalance').textContent = '—';
-      setStatus('Lỗi lấy số dư USDT: ' + (e?.message||e), 'error');
+    setStatus('Đang kết nối RPC...');
+    let provider;
+    try{ provider = await getProvider(); }
+    catch(e){ setStatus('Lỗi RPC: '+(e?.message||e), 'error'); return; }
+
+    setStatus('Đang kiểm tra...');
+
+    const BATCH = 5;
+    for (let i=0; i<rows.length; i+=BATCH){
+      const slice = rows.slice(i, i+BATCH);
+      await Promise.allSettled(slice.map(async (tr) => {
+        const addrInput = $('td.addr input', tr);
+        const balCell = $('td.bal', tr);
+        const addr = (addrInput.value||'').trim();
+
+        if(!validAddr(addr)){
+          balCell.textContent = 'địa chỉ sai';
+          balCell.classList.add('err');
+          return;
+        }
+        balCell.classList.remove('err');
+        balCell.textContent = '...';
+        try{
+          const val = await fetchUSDT(provider, token, addr);
+          balCell.textContent = fmt.format(val) + ' USDT';
+        }catch(e){
+          balCell.textContent = 'lỗi';
+          balCell.classList.add('err');
+        }
+      }));
     }
+    setStatus('Xong.');
   }
 
-  $('checkBtn').addEventListener('click', checkUSDT);
-  $('bnbBtn').addEventListener('click', checkBNB);
-  $('bscscanBtn').addEventListener('click', () => {
-    const a = $('addr').value.trim();
-    if(validAddr(a)) window.open(`https://bscscan.com/address/${a}`, '_blank');
-    else setStatus('Địa chỉ ví không hợp lệ.', 'error');
-  });
-  $('clearBtn').addEventListener('click', () => {
-    $('usdtBalance').textContent = '—';
-    $('bnbBalance').textContent = '—';
-    setStatus('Đã xóa kết quả.');
-  });
+  function addRow(name='', addr=''){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="name"><input placeholder="Tên ví" value="${name.replaceAll('"','&quot;')}" /></td>
+      <td class="addr"><input placeholder="0x..." value="${addr.replaceAll('"','&quot;')}" /></td>
+      <td class="bal">—</td>`;
+    $('#tbl tbody').appendChild(tr);
+    $('td.name input', tr).addEventListener('input', saveState);
+    $('td.addr input', tr).addEventListener('input', saveState);
+    return tr;
+  }
 
-  // Auto-run
-  checkUSDT();
-  checkBNB();
+  async function pasteList(){
+    try{
+      const text = await navigator.clipboard.readText();
+      if(!text) return alert('Clipboard rỗng');
+      const lines = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+      lines.forEach(line=>{
+        const [nameMaybe, addrMaybe] = line.split(/[\s,;]+/);
+        if(addrMaybe) addRow(nameMaybe, addrMaybe); else addRow('', nameMaybe);
+      });
+      saveState();
+    }catch(e){ alert('Không đọc được clipboard: '+(e?.message||e)); }
+  }
+
+  function exportCsv(){
+    const rows = [['ten','vi','so_du_USDT']];
+    $$('#tbl tbody tr').forEach(tr=>{
+      const name = $('td.name input', tr).value.trim();
+      const addr = $('td.addr input', tr).value.trim();
+      const bal = $('td.bal', tr).textContent.trim();
+      rows.push([name, addr, bal]);
+    });
+    const csv = rows.map(r=> r.map(v=> '"'+(v||'').replaceAll('"','""')+'"').join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'usdt-balances.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function clearBal(){ $$('#tbl tbody tr td.bal').forEach(td=>{td.textContent='—'; td.classList.remove('err');}); setStatus('Đã xóa số dư.'); }
+  function clearRows(){ $('#tbl tbody').innerHTML=''; saveState(); }
+
+  // Auto refresh logic
+  let timer = null; let remaining = 5;
+  function startAuto(){
+    if(timer) return; // already running
+    remaining = 0; tick();
+    timer = setInterval(tick, 1000);
+  }
+  function stopAuto(){ if(timer){ clearInterval(timer); timer=null; } $('#cd').textContent='—'; }
+  function tick(){
+    if(remaining<=0){
+      checkAll(); remaining = 5; $('#cd').textContent = '0s';
+    } else { remaining--; $('#cd').textContent = remaining+'s'; }
+  }
+
+  // Event bindings
+  $('#checkAll').addEventListener('click', checkAll);
+  $('#checkNow').addEventListener('click', checkAll);
+  $('#addRow').addEventListener('click', () => { addRow(); saveState(); });
+  $('#pasteList').addEventListener('click', pasteList);
+  $('#exportCsv').addEventListener('click', exportCsv);
+  $('#clearBal').addEventListener('click', clearBal);
+  $('#clearRows').addEventListener('click', clearRows);
+  $('#token').addEventListener('input', saveState);
+  $('#rpc').addEventListener('input', saveState);
+  $('#autoToggle').addEventListener('change', (e)=>{ e.target.checked ? startAuto() : stopAuto(); saveState(); });
+
+  // Init
+  const st = loadState();
+  if(st){
+    $('#token').value = st.token || $('#token').value;
+    $('#rpc').value = st.rpc || '';
+    $('#autoToggle').checked = !!st.auto;
+    renderRows(st.rows);
+  }else{
+    renderRows([]);
+  }
+  if($('#autoToggle').checked) startAuto();
 })();
 </script>
 </body>
