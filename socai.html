@@ -1,4 +1,3 @@
-<!doctype html>
 <html lang="vi">
 <head>
 <meta charset="utf-8"/>
@@ -35,7 +34,7 @@ header{display:flex;gap:12px;align-items:flex-start;justify-content:space-betwee
 
 /* Cards */
 .panel{background:var(--panel);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 32px rgba(2,6,23,.45)}
-.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .card{padding:16px}
 .card .label{font-size:13px;color:var(--muted)}
 .card .value{font-size:28px;font-weight:800;margin-top:6px}
@@ -130,9 +129,8 @@ dialog{border:0;background:transparent} dialog::backdrop{background:rgba(2,6,23,
 
   <div class="cards">
     <div class="panel card"><div class="label">Tổng thu (USDT)</div><div class="value" id="totalIncome">0</div></div>
+    <div class="panel card"><div class="label">Tổng chi (USDT)</div><div class="value" id="totalExpense">0</div></div>
     <div class="panel card"><div class="label">Lợi nhuận (Thu - Chi)</div><div class="value" id="totalProfit">0</div></div>
-    <div class="panel card"><div class="label">Tháng này: Thu</div><div class="value" id="monthIncome">0</div></div>
-    <div class="panel card"><div class="label">Tháng này: Lợi nhuận</div><div class="value" id="monthProfit">0</div></div>
   </div>
 
   <div class="banner">
@@ -302,9 +300,9 @@ function computeTotals(){
   for(const [ds,r] of Object.entries(u.days)){
     const d=parseLocalDate(ds), i=+r.income||0, x=+r.expense||0; ti+=i; te+=x; if(d>=s&&d<=e){ mi+=i; me+=x; }
   }
-  return {ti, tf:ti-te, mi, mf:mi-me};
+  return {ti, te, tf:ti-te, mi, mf:mi-me};
 }
-function renderStats(){ const t=computeTotals(); $('#totalIncome').textContent=t.ti; $('#totalProfit').textContent=t.tf; $('#monthIncome').textContent=t.mi; $('#monthProfit').textContent=t.mf; }
+function renderStats(){ const t=computeTotals(); $('#totalIncome').textContent=t.ti; $('#totalExpense').textContent=t.te; $('#totalProfit').textContent=t.tf; }
 
 function renderCalendar(){
   $('#monthLabel').textContent=new Date(viewYear,viewMonth,1).toLocaleString('vi-VN',{month:'long',year:'numeric'});
