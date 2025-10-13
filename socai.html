@@ -9,7 +9,7 @@
   --bg:#0b0e14; --panel:#121826; --control:#0f1421; --muted:#94a3b8; --text:#e5e7eb;
   --accent:#f59e0b; --accent2:#fbbf24; --border:#243149; --dash:#2b3b5e;
   --grid:#23324d; --green:#16a34a; --greenText:#052e16;
-  /* NEW score colors */
+  /* score colors */
   --scoreBg:#1D2A6A;      /* indigo */
   --scoreText:#E0E7FF;    /* indigo-100 */
   --btn:#f59e0b; --btn2:#fbbf24;
@@ -47,14 +47,32 @@ header{display:flex;gap:12px;align-items:flex-start;justify-content:space-betwee
 .tgl{height:28px;border-radius:999px;border:1px solid var(--border);background:rgba(148,163,184,.12);color:var(--muted);padding:0 10px;cursor:pointer}
 .tgl.on{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#111827;border:0}
 
-.hotlist{display:grid;grid-template-columns:1fr 70px 120px 88px;border:1px solid var(--grid);border-radius:8px;overflow:hidden}
+/* grid: name | score | fee | otp | bonus */
+.hotlist{display:grid;grid-template-columns:1fr 70px 80px 120px 88px;border:1px solid var(--grid);border-radius:8px;overflow:hidden}
 .row{display:contents}
 .cell{min-height:30px;display:flex;align-items:center}
 .cell.name{background:linear-gradient(0deg, rgba(22,163,74,.98), rgba(22,163,74,.98));color:#001b0a;padding:0 10px;border-right:1px solid var(--grid)}
 .cell.score{background:var(--scoreBg);color:var(--scoreText);justify-content:center;font-weight:800;position:relative}
 .cell.otp{background:var(--otpBg);color:var(--otpText);justify-content:center;font-weight:900;letter-spacing:1px;cursor:pointer;position:relative}
 .cell.bonus{background:linear-gradient(90deg,var(--btn),var(--btn2));color:#1f2937;justify-content:center;font-weight:800;cursor:pointer}
-.hotlist > *{border-bottom:1px solid var(--grid)} .hotlist > :nth-last-child(-n+4){border-bottom:none}
+/* Fee cell - simple centered input */
+/* Hide number spinners for Fee input */
+.cell.fee input::-webkit-outer-spin-button,
+.cell.fee input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+.cell.fee input{ -moz-appearance:textfield; appearance:textfield; }
+.cell.fee{
+  background:#1e3a8a; /* simple solid indigo-blue */
+  color:#f9fafb;
+  justify-content:center;
+  position:relative;
+}
+.cell.fee input{
+  color:#f9fafb;
+  caret-color:#f9fafb;
+}
+.cell.fee input{position:absolute;inset:4px;width:calc(100% - 8px);height:calc(100% - 8px);border:0;background:transparent;color:var(--scoreText);font:inherit;font-weight:700;text-align:center;outline:none}
+.hotlist > *{border-bottom:1px solid var(--grid)} .hotlist > :nth-last-child(-n+5){border-bottom:none}
+
 /* score inline edit */
 .cell.score .display{pointer-events:none}
 .cell.score input{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;color:var(--scoreText);font:inherit;font-weight:800;text-align:center;outline:none;display:none}
@@ -126,6 +144,7 @@ dialog{border:0;background:transparent} dialog::backdrop{background:rgba(2,6,23,
       </div>
     </div>
     <div id="hotlist" class="hotlist"></div>
+    <div id="feeTotalBar" style="margin-top:6px;text-align:right;color:var(--muted)"></div>
     <div class="hint">Click số để sửa • Lăn chuột: ±1 (Shift: ±5) • Bấm “+18 điểm” • Click ô OTP để đặt/ đổi secret (Base32)</div>
   </div>
 
@@ -170,6 +189,7 @@ dialog{border:0;background:transparent} dialog::backdrop{background:rgba(2,6,23,
 const $=(q)=>document.querySelector(q);
 const storeKey='alpha_ledger_v1', hotlistKey='alpha_hotlist', otpKey='alpha_hotlist_2fa';
 const resetFlagKey='alpha_auto_reset_scores', resetLastKey='alpha_auto_reset_last';
+const feeKey='alpha_fee';
 
 /* ===== Base32 + TOTP ===== */
 const B32='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -186,10 +206,12 @@ function loadHotlist(){ try{const s=localStorage.getItem(hotlistKey); return s?J
 function saveHotlist(v){ try{localStorage.setItem(hotlistKey, JSON.stringify(v));}catch{} }
 function loadOtpMap(){ try{const s=localStorage.getItem(otpKey); return s?JSON.parse(s):{} }catch{return {} } }
 function saveOtpMap(m){ try{localStorage.setItem(otpKey, JSON.stringify(m));}catch{} }
+function loadFeeMap(){ try{const s=localStorage.getItem(feeKey); return s?JSON.parse(s):{} }catch{return {} } }
+function saveFeeMap(m){ try{localStorage.setItem(feeKey, JSON.stringify(m));}catch{} }
 
 let otpTimer=null;
 async function renderHotlist(){
-  const data=loadHotlist(); const secrets=loadOtpMap(); const wrap=$('#hotlist'); wrap.innerHTML=''; if(otpTimer){clearInterval(otpTimer); otpTimer=null;}
+  const data=loadHotlist(); const secrets=loadOtpMap(); const fees=loadFeeMap(); const wrap=$('#hotlist'); wrap.innerHTML=''; if(otpTimer){clearInterval(otpTimer); otpTimer=null;}
   const rowRefs=[];
   for(const [label,score] of data){
     const name=document.createElement('div'); name.className='cell name row'; name.textContent=label;
@@ -203,6 +225,23 @@ async function renderHotlist(){
     inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){e.preventDefault();commit()} else if(e.key==='Escape'){ e.preventDefault(); scoreCell.classList.remove('editing'); } });
     inp.addEventListener('blur',commit);
     scoreCell.addEventListener('wheel',(e)=>{ e.preventDefault(); const step=e.shiftKey?5:1; const dir=e.deltaY<0?1:-1; const cur=Number(disp.textContent.trim()||0); const list=loadHotlist(); const idx=list.findIndex(x=>x[0]===label); if(idx>=0){ list[idx][1]=cur+dir*step; saveHotlist(list); disp.textContent=list[idx][1]; } }, {passive:false});
+
+    // === Fee cell ===
+    const feeCell=document.createElement('div'); feeCell.className='cell fee row';
+    const feeInput=document.createElement('input'); feeInput.type='number'; feeInput.step='0.01';
+    feeInput.value = (fees[label] ?? '');
+    
+    // Auto-select on focus/click
+    feeInput.addEventListener('focus', ()=>{ try{ feeInput.select(); }catch{} });
+    feeCell.addEventListener('click', ()=>{ feeInput.focus(); try{ feeInput.select(); }catch{} });
+feeInput.addEventListener('input', ()=>{
+      const map=loadFeeMap();
+      const val = Number(feeInput.value);
+      if(!isNaN(val)) map[label]=val; else delete map[label];
+      saveFeeMap(map);
+      renderFeeTotal();
+    });
+    feeCell.appendChild(feeInput);
 
     const otpCell=document.createElement('div'); otpCell.className='cell otp row';
     const otpSpan=document.createElement('span'); otpSpan.textContent='••••••'; otpCell.appendChild(otpSpan);
@@ -222,7 +261,11 @@ async function renderHotlist(){
     const bonus=document.createElement('div'); bonus.className='cell bonus row'; bonus.textContent='+18 điểm';
     bonus.addEventListener('click',()=>{ const list=loadHotlist(); const idx=list.findIndex(x=>x[0]===label); if(idx>=0){ list[idx][1]=(+list[idx][1]||0)+18; saveHotlist(list); disp.textContent=list[idx][1]; } });
 
-    wrap.appendChild(name); wrap.appendChild(scoreCell); wrap.appendChild(otpCell); wrap.appendChild(bonus);
+    wrap.appendChild(name); 
+    wrap.appendChild(scoreCell); 
+    wrap.appendChild(feeCell);   // new Fee column
+    wrap.appendChild(otpCell); 
+    wrap.appendChild(bonus);
     rowRefs.push({label, el:otpSpan, hint, secretBytes:base32ToBytes(secrets[label]||'')});
   }
 
@@ -233,6 +276,15 @@ async function renderHotlist(){
     }
   }
   tick(); otpTimer=setInterval(tick,1000);
+  renderFeeTotal();
+}
+
+/* ===== Fee total ===== */
+function renderFeeTotal(){
+  const fees=loadFeeMap();
+  const total=Object.values(fees).reduce((a,b)=>a+Number(b||0),0);
+  const bar=$('#feeTotalBar');
+  bar.textContent='Tổng Fee: ' + total.toFixed(2);
 }
 
 /* ===== Calendar helpers (timezone-safe) ===== */
@@ -264,7 +316,7 @@ function renderCalendar(){
     const inMonth=(d.getMonth()===viewMonth);
     const dateStr=fmtDateLocal(d);
     const rec=u.days[dateStr]||{};
-    const cell=document.createElement('div'); cell.className='day'+(inMonth?'':' other')+(dateStr===todayStr?' today':'');
+    const cell=document.createElement('div'); cell.className='day'+(inMonth?'':' other')+(dateStr===todayStr?' today':''); 
     const num=document.createElement('div'); num.className='dnum'; num.textContent=d.getDate(); cell.appendChild(num);
     if(rec.note){ const note=document.createElement('div'); note.style.marginTop='6px'; note.style.fontSize='12px'; note.style.color='#94a3b8'; note.textContent=rec.note.substring(0,60); cell.appendChild(note); }
     const chips=document.createElement('div'); chips.style.position='absolute'; chips.style.bottom='8px'; chips.style.left='10px'; chips.style.display='flex'; chips.style.gap='6px';
@@ -304,6 +356,7 @@ function exportAll(){
     ledger: JSON.parse(localStorage.getItem(storeKey)||'{}'),
     hotlist: JSON.parse(localStorage.getItem(hotlistKey)||'[]'),
     otp: JSON.parse(localStorage.getItem(otpKey)||'{}'),
+    fees: JSON.parse(localStorage.getItem(feeKey)||'{}'),
     autoReset: JSON.parse(localStorage.getItem(resetFlagKey)||'false'),
     lastReset: localStorage.getItem(resetLastKey)||'',
     _meta: { app:'so-cai-alpha', ts:new Date().toISOString() }
@@ -320,6 +373,7 @@ $('#importFile').addEventListener('change',async (e)=>{
     if(data.ledger) localStorage.setItem(storeKey, JSON.stringify(data.ledger));
     if(data.hotlist) localStorage.setItem(hotlistKey, JSON.stringify(data.hotlist));
     if(data.otp) localStorage.setItem(otpKey, JSON.stringify(data.otp));
+    if(data.fees) localStorage.setItem(feeKey, JSON.stringify(data.fees));
     if(typeof data.autoReset==='boolean') localStorage.setItem(resetFlagKey, JSON.stringify(data.autoReset));
     if(data.lastReset) localStorage.setItem(resetLastKey, data.lastReset);
     alert('Khôi phục xong!');
@@ -333,7 +387,10 @@ function getTodayStr(){ const d=new Date(); return d.toISOString().slice(0,10); 
 function isAutoResetOn(){ try{return JSON.parse(localStorage.getItem(resetFlagKey)||'false');}catch{return false;} }
 function setAutoReset(on){ localStorage.setItem(resetFlagKey, JSON.stringify(!!on)); updateResetToggleUI(); }
 function updateResetToggleUI(){ const btn=$('#autoResetBtn'); if(isAutoResetOn()){ btn.classList.add('on'); } else { btn.classList.remove('on'); } }
-function performReset(){ const list=loadHotlist().map(([l,_s])=>[l,0]); saveHotlist(list); localStorage.setItem(resetLastKey, getTodayStr()); renderHotlist(); }
+function performReset(){ const list=loadHotlist().map(([l,_s])=>[l,0]); saveHotlist(list);
+  // Reset all fees as well
+  localStorage.setItem(feeKey, JSON.stringify({}));
+  localStorage.setItem(resetLastKey, getTodayStr()); renderHotlist(); }
 function maybeResetNow(){
   if(!isAutoResetOn()) return;
   const now=new Date(); const last=localStorage.getItem(resetLastKey)||'';
