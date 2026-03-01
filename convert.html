@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Proxy Formatter → http://user:pass@ip:port</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#0f172a; color:#e5e7eb; margin:0; }
+    .wrap { max-width: 1000px; margin: 30px auto; padding: 20px; }
+    h1 { font-size: 22px; margin-bottom: 10px; }
+    textarea { width:100%; min-height:180px; padding:12px; border-radius:10px; border:1px solid #334155; background:#020617; color:#e5e7eb; }
+    .row { display:flex; gap:10px; margin:12px 0; flex-wrap: wrap; align-items: center; }
+    button { background:#22c55e; border:none; padding:10px 14px; border-radius:10px; font-weight:700; cursor:pointer; }
+    button.secondary { background:#334155; color:#e5e7eb; }
+    .note { font-size: 13px; color:#94a3b8; }
+    input[type="number"] { width:90px; padding:8px; border-radius:8px; border:1px solid #334155; background:#020617; color:#e5e7eb; }
+    label { font-size: 14px; color:#cbd5f5; }
+    .success { color:#22c55e; font-size:13px; margin-left:10px; display:none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Đổi proxy → <code>http://user:pass@ip:port</code></h1>
+    <div class="note">Hỗ trợ nhiều dạng + tùy chọn chèn dòng trắng & chia list</div>
+
+    <h3>Input</h3>
+    <textarea id="input" placeholder="Dán list proxy mỗi dòng 1 cái..."></textarea>
+
+    <div class="row">
+      <button onclick="convert()">Convert</button>
+      <button class="secondary" onclick="copyOut()">Copy Output</button>
+      <button class="secondary" onclick="clearAll()">Clear</button>
+      <span id="copiedMsg" class="success">✔ Đã copy</span>
+    </div>
+
+    <div class="row">
+      <label>Chèn 1 dòng trắng mỗi</label>
+      <input type="number" id="blankEvery" placeholder="VD: 10" min="0">
+      <label>dòng</label>
+
+      <label style="margin-left:20px;">Chia list thành</label>
+      <input type="number" id="splitParts" placeholder="VD: 4" min="0">
+      <label>phần bằng nhau</label>
+    </div>
+
+    <h3>Output</h3>
+    <textarea id="output" placeholder="Kết quả..." readonly></textarea>
+
+    <div class="row">
+      <button onclick="copyOut()">📋 Copy kết quả</button>
+    </div>
+  </div>
+
+<script>
+function normalize(line) {
+  line = line.trim();
+  if (!line) return "";
+
+  line = line.replace(/^(https?|socks4|socks5):\/\//i, "");
+
+  if (line.includes("@")) {
+    const [auth, host] = line.split("@");
+    const [user, pass] = auth.split(":");
+    return `http://${user || ""}:${pass || ""}@${host}`;
+  }
+
+  const parts = line.split(":");
+
+  if (parts.length === 5) {
+    const [ip, port, _type, user, pass] = parts;
+    return `http://${user}:${pass}@${ip}:${port}`;
+  }
+
+  if (parts.length === 4) {
+    const [ip, port, user, pass] = parts;
+    return `http://${user}:${pass}@${ip}:${port}`;
+  }
+
+  if (parts.length === 2) {
+    const [ip, port] = parts;
+    return `http://${ip}:${port}`;
+  }
+
+  return "";
+}
+
+function addBlankLines(list, every) {
+  if (!every || every <= 0) return list;
+  let out = [];
+  list.forEach((line, i) => {
+    out.push(line);
+    if ((i + 1) % every === 0) out.push("");
+  });
+  return out;
+}
+
+function splitEqual(list, parts) {
+  if (!parts || parts <= 1) return list;
+  const size = Math.ceil(list.length / parts);
+  let out = [];
+  for (let i = 0; i < list.length; i += size) {
+    out = out.concat(list.slice(i, i + size));
+    if (i + size < list.length) out.push("");
+  }
+  return out;
+}
+
+function convert() {
+  const raw = document.getElementById("input").value.split("\n");
+  let list = raw.map(normalize).filter(Boolean);
+
+  const blankEvery = parseInt(document.getElementById("blankEvery").value);
+  const splitParts = parseInt(document.getElementById("splitParts").value);
+
+  if (splitParts > 1) list = splitEqual(list, splitParts);
+  if (blankEvery > 0) list = addBlankLines(list, blankEvery);
+
+  document.getElementById("output").value = list.join("\n");
+}
+
+function copyOut() {
+  const out = document.getElementById("output");
+  if (!out.value) return;
+  out.select();
+  document.execCommand("copy");
+
+  const msg = document.getElementById("copiedMsg");
+  msg.style.display = "inline";
+  setTimeout(() => msg.style.display = "none", 1500);
+}
+
+function clearAll() {
+  document.getElementById("input").value = "";
+  document.getElementById("output").value = "";
+}
+</script>
+</body>
+</html>
