@@ -16,14 +16,19 @@
     input[type="number"] { width:90px; padding:8px; border-radius:8px; border:1px solid #334155; background:#020617; color:#e5e7eb; }
     label { font-size: 14px; color:#cbd5f5; }
     .success { color:#22c55e; font-size:13px; margin-left:10px; display:none; }
+    .file { background:#334155; padding:8px 10px; border-radius:10px; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Đổi proxy → <code>http://user:pass@ip:port</code></h1>
-    <div class="note">Hỗ trợ nhiều dạng + tùy chọn chèn dòng trắng & chia list</div>
+    <div class="note">Hỗ trợ nhiều dạng + upload file + tải kết quả</div>
 
     <h3>Input</h3>
+    <div class="row">
+      <input type="file" id="fileInput" class="file" accept=".txt" onchange="loadFile()">
+      <span class="note">(Upload file .txt chứa proxy)</span>
+    </div>
     <textarea id="input" placeholder="Dán list proxy mỗi dòng 1 cái..."></textarea>
 
     <div class="row">
@@ -48,10 +53,19 @@
 
     <div class="row">
       <button onclick="copyOut()">📋 Copy kết quả</button>
+      <button onclick="downloadOut()">⬇️ Tải xuống .txt</button>
     </div>
   </div>
 
 <script>
+function loadFile() {
+  const file = document.getElementById("fileInput").files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => document.getElementById("input").value = e.target.result;
+  reader.readAsText(file);
+}
+
 function normalize(line) {
   line = line.trim();
   if (!line) return "";
@@ -127,6 +141,16 @@ function copyOut() {
   const msg = document.getElementById("copiedMsg");
   msg.style.display = "inline";
   setTimeout(() => msg.style.display = "none", 1500);
+}
+
+function downloadOut() {
+  const text = document.getElementById("output").value;
+  if (!text) return;
+  const blob = new Blob([text], { type: "text/plain" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "proxy_converted.txt";
+  a.click();
 }
 
 function clearAll() {
